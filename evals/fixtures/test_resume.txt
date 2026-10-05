@@ -18,7 +18,7 @@ Backend: FastAPI, PostgreSQL, Docker, Redis, REST APIs, pytest, Git
 Cloud: AWS (Lambda, S3, Bedrock), basic GCP
 
 EXPERIENCE
-AI Engineer — Freelance | 2023 - Present
+AI Engineer - Freelance | 2023 - Present
 - Built a multi-agent customer support triage system using LangGraph
   supervisor pattern, routing across billing, technical, and escalation agents
 - Implemented RAG pipeline with ChromaDB for internal documentation search,
@@ -26,12 +26,12 @@ AI Engineer — Freelance | 2023 - Present
 - Designed eval suites with deterministic and LLM-as-judge graders
   across 20+ test cases
 
-Backend Engineer — Startup (Contract) | 2022 - 2023
+Backend Engineer - Startup (Contract) | 2022 - 2023
 - Built REST APIs with FastAPI and PostgreSQL for a SaaS product
 - Containerized services with Docker, deployed on AWS
 
 EDUCATION
-BSc Computer Science — State University | 2022
+BSc Computer Science - State University | 2022
 
 PROJECTS
 - Agentic Support Triage: LangGraph supervisor routing 4 specialist agents,

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -20,6 +21,7 @@ load_dotenv()
 
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "global.anthropic.claude-haiku-4-5-20251001-v1:0")
 BEDROCK_REGION = os.getenv("BEDROCK_REGION", "us-east-1")
+SEARCH_SERVER_URL = os.getenv("SEARCH_SERVER_URL", "http://127.0.0.1:8000/mcp")
 
 
 
@@ -28,44 +30,52 @@ async def run_research():
     mcp_client = MultiServerMCPClient(
         {
             "notes": {
-                "command": "python",
+                "command": sys.executable,
                 "args":['servers/notes_server.py'],
                 "transport": "stdio",
             },
             
             "search": {
-                "url": "http://127.0.0.1:8000/mcp",
+                "url": SEARCH_SERVER_URL,
                 "transport": "streamable_http"   
                 },
         })
     tools = await mcp_client.get_tools()
     llm = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=BEDROCK_REGION)
     
-    print("Paste your resume below. Type END on a new line when done:\n")
-    lines = []
-    while True:
-        line = input()
-        if line.strip() == "END":
-            break
-        lines.append(line)
+    resume_text = ""
+    while not resume_text:
+        print("Paste your resume below. Type END on a new line when done:\n")
+        lines = []
+        while True:
+            line = input()
+            if line.strip() == "END":
+                break
+            lines.append(line)
         resume_text = "\n".join(lines).strip()
-        
+        if not resume_text:
+            print("That resume was empty - paste it first.\n")
+
     agent = create_agent(
         model=llm,
         tools= tools,
         checkpointer=InMemorySaver(),
-        system_prompt=f"You are a professional career coach.\n\nResume:\n{resume_text}"
-        
+        system_prompt=(
+            "You are a professional career coach.\n\n"
+            f"Resume:\n{resume_text}\n\n"
+            "When the user shares a job URL, scrape it, compare it against the resume, "
+            "and save the analysis with save_research before you reply."
+        ),
     )
     
     
     # thread_id keeps the conversation continuous
     config = {"configurable": {"thread_id": "job-research-session"}}
-    print("Agent ready. Type 'exit' to quit.\n")
+    print("Agent ready. Type 'exit', 'quit' or 'end' to end the session.\n")
     
     while True:
         user_input = input("You: ").strip()
-        if user_input.lower() in ["exit", "quit"]:
+        if user_input.lower() in ["exit", "quit", "end"]:
             break
             
         result = await agent.ainvoke(
@@ -84,8 +94,13 @@ async def run_research():
             )
             print("=" * 50)
             print(f"Match Score: {parsed.match_score}/100")
+            print("\nTop Gaps:")
             for gap in parsed.top_gaps:
                 print(f"  • {gap}")
+            print(f"\nPitch:\n  {parsed.pitch}")
+            print("\nRecommended Roles:")
+            for role in parsed.recommend_roles:
+                print(f"  • {role}")
             print("=" * 50 + "\n")
 
 

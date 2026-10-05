@@ -1,6 +1,15 @@
 import json
 
 
+def expects_structured_output(expected: dict) -> bool:
+    """Whether this case is supposed to yield a parsed gap analysis."""
+    return (
+        expected.get("expected_match_score_above") is not None
+        or expected.get("expected_match_score_below") is not None
+        or expected.get("expected_gaps_min") is not None
+    )
+
+
 def _get_tool_calls(run_result: dict) -> list[str]:
     """Extract all tool names called during the agent run."""
     tools_called = []
@@ -21,7 +30,7 @@ def grade_tools_called(run_result: dict, expected: dict) -> dict:
     """Check that all expected tools were actually called."""
     expected_tools = expected.get("expected_tools_called", [])
     if not expected_tools:
-        return {"score": 1.0, "reason": "No tools expected — skipped"}
+        return {"score": 1.0, "reason": "No tools expected - skipped"}
 
     called = _get_tool_calls(run_result)
     found = [t for t in expected_tools if t in called]
@@ -37,6 +46,8 @@ def grade_tools_called(run_result: dict, expected: dict) -> dict:
 def grade_structured_output(run_result: dict, expected: dict, parsed) -> dict:
     """Check that the structured output has valid populated fields."""
     if parsed is None:
+        if expects_structured_output(expected):
+            return {"score": 0.0, "reason": "Structured output expected but parsing failed"}
         # cases where we don't run structured output
         return {"score": 1.0, "reason": "No structured output expected"}
 
@@ -63,8 +74,10 @@ def grade_match_score_range(run_result: dict, expected: dict, parsed) -> dict:
     above = expected.get("expected_match_score_above")
     below = expected.get("expected_match_score_below")
 
-    if parsed is None or (above is None and below is None):
+    if above is None and below is None:
         return {"score": 1.0, "reason": "No score range expected"}
+    if parsed is None:
+        return {"score": 0.0, "reason": "Score range expected but no structured output to read"}
 
     score = parsed.match_score
     if above and score < above:
@@ -78,8 +91,10 @@ def grade_match_score_range(run_result: dict, expected: dict, parsed) -> dict:
 def grade_gaps_count(run_result: dict, expected: dict, parsed) -> dict:
     """Check that enough gaps were identified."""
     min_gaps = expected.get("expected_gaps_min")
-    if parsed is None or min_gaps is None:
+    if min_gaps is None:
         return {"score": 1.0, "reason": "No gap count expected"}
+    if parsed is None:
+        return {"score": 0.0, "reason": "Gap count expected but no structured output to read"}
 
     count = len(parsed.top_gaps)
     passed = count >= min_gaps
@@ -103,6 +118,8 @@ def grade_no_error(run_result: dict, expected: dict) -> dict:
 def grade_llm_judge(run_result: dict, expected: dict, parsed, llm) -> dict:
     """LLM-as-judge scores the quality of the gap analysis."""
     if parsed is None:
+        if expects_structured_output(expected):
+            return {"score": 0.0, "reason": "Gap analysis expected but none was parsed to judge"}
         return {"score": 1.0, "reason": "No structured output to judge"}
     resume = expected.get("resume_text", "not provided")
 

@@ -23,6 +23,7 @@ from evals.graders import (
     grade_gaps_count,
     grade_no_error,
     grade_llm_judge,
+    expects_structured_output,
 )
 
 load_dotenv()
@@ -40,13 +41,13 @@ class GapAnalysis(BaseModel):
 
 
 async def run_single_eval(example: dict, index: int, resume_text: str) -> dict:
-    """Run one eval case — fresh agent per case to avoid memory contamination."""
+    """Run one eval case - fresh agent per case to avoid memory contamination."""
     
     
     
     mcp_client = MultiServerMCPClient({
         "notes": {
-            "command": "python",
+            "command": sys.executable,
             "args": ["servers/notes_server.py"],
             "transport": "stdio",
         },
@@ -63,7 +64,12 @@ async def run_single_eval(example: dict, index: int, resume_text: str) -> dict:
             model=llm,
             tools=tools,
             checkpointer=InMemorySaver(),
-            system_prompt=f"You are a professional career coach.\n\nResume:\n{resume_text}",
+            system_prompt=(
+                "You are a professional career coach.\n\n"
+                f"Resume:\n{resume_text}\n\n"
+                "When the user shares a job URL, scrape it, compare it against the resume, "
+                "and save the analysis with save_research before you reply."
+            ),
         )
 
         config = {"configurable": {"thread_id": f"eval-{index}"}}
@@ -74,11 +80,7 @@ async def run_single_eval(example: dict, index: int, resume_text: str) -> dict:
 
         # only run structured output for cases that expect it
         parsed = None
-        needs_structured = (
-            example.get("expected_match_score_above") is not None
-            or example.get("expected_match_score_below") is not None
-            or example.get("expected_gaps_min") is not None
-        )
+        needs_structured = expects_structured_output(example)
         if needs_structured:
             structured_llm = llm.with_structured_output(GapAnalysis)
             agent_text = str(run_result["messages"][-1].content)
@@ -135,7 +137,7 @@ async def run_eval_suite():
         print(f"  {status} overall={result['overall']:.2f} difficulty={result['difficulty']}")
         for name, score in result["scores"].items():
             marker = "OK" if score["score"] >= PASS_THRESHOLD else "NO"
-            print(f"    {marker} {name}: {score['score']:.2f} — {score['reason']}")
+            print(f"    {marker} {name}: {score['score']:.2f} - {score['reason']}")
         print()
 
     passed = sum(1 for r in results if r["passed"])

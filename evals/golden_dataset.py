@@ -1,6 +1,6 @@
 GOLDEN_DATASET = [
     {
-        "input": "research this job and save the gap analysis: https://jobs.lever.co/toptal/6e278ab2-9413-4ae3-a893-6691ebd2ade8",
+        "input": "research this job and save the gap analysis: https://jobs.lever.co/toptal/a9653cf8-e956-4cfc-8c27-3f27cb7307da",
         "expected_tools_called": ["scrape_job_listing", "save_research"],
         "expected_match_score_below": 40,      # bad fit, score should be low
         "expected_match_score_above": None,
