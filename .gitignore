@@ -10,3 +10,6 @@ wheels/
 .venv
 .env
 resume.txt
+
+# Local SQLite research database (created by servers/notes_server.py)
+data/
