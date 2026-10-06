@@ -278,3 +278,9 @@ You can inspect tool calls, token usage, and latency in your LangSmith dashboard
 ## License
 
 MIT - see [LICENSE](LICENSE).
+
+---
+
+## Contact
+
+**Ahmed Gamal** · GitHub: [0xSnow-1](https://github.com/0xSnow-1) · X: [_0xSnowEth](https://x.com/_0xSnowEth) · LinkedIn: [in/ahmed-gamal-363b47307](https://www.linkedin.com/in/ahmed-gamal-363b47307) · Website: [0xsnow-1.github.io](https://0xsnow-1.github.io) · Email: [0xahmed.gamal@gmail.com](mailto:0xahmed.gamal@gmail.com)
